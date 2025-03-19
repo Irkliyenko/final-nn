@@ -2,6 +2,7 @@
 import numpy as np
 from typing import List, Tuple
 from numpy.typing import ArrayLike
+from collections import Counter
 
 def sample_seqs(seqs: List[str], labels: List[bool]) -> Tuple[List[str], List[bool]]:
     """
@@ -20,7 +21,27 @@ def sample_seqs(seqs: List[str], labels: List[bool]) -> Tuple[List[str], List[bo
         sampled_labels: List[bool]
             List of labels for the sampled sequences
     """
-    pass
+    # Convert lists to numpy arrays
+    seqs = np.array(seqs)
+    labels = np.array(labels)
+
+    # Get counts of each class
+    label_counts = Counter(labels)
+    max_class_size = max(label_counts.values())
+
+    # Separate sequences by class
+    pos_seqs = seqs[labels == True]
+    neg_seqs = seqs[labels == False]
+
+    # Sample with replacement to balance class sizes
+    pos_samples = np.random.choice(pos_seqs, max_class_size, replace=True)
+    neg_samples = np.random.choice(neg_seqs, max_class_size, replace=True)
+
+    # Combine sampled sequences and labels
+    sampled_seqs = np.concatenate([pos_samples, neg_samples])
+    sampled_labels = np.array([True] * max_class_size + [False] * max_class_size)
+
+    return sampled_seqs.tolist(), sampled_labels.tolist()
 
 def one_hot_encode_seqs(seq_arr: List[str]) -> ArrayLike:
     """
@@ -41,4 +62,16 @@ def one_hot_encode_seqs(seq_arr: List[str]) -> ArrayLike:
                 G -> [0, 0, 0, 1]
             Then, AGA -> [1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0].
     """
-    pass
+    nucleotide_map = {
+        "A": [1, 0, 0, 0],
+        "T": [0, 1, 0, 0],
+        "C": [0, 0, 1, 0],
+        "G": [0, 0, 0, 1]
+    }
+
+    # Encode each sequence
+    encoded_seqs = [
+        np.concatenate([nucleotide_map[nuc] for nuc in seq]) for seq in seq_arr
+    ]
+
+    return np.array(encoded_seqs)
